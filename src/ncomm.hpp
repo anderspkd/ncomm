@@ -29,6 +29,8 @@ typedef struct {
     channel_role_t  role;
 } channel_info_t;
 
+// TODO: local/remote should be server/client
+
 class Channel {
 public:
 
@@ -77,6 +79,28 @@ public:
 
 private:
     vector<u8> buffer;
+};
+
+class AsioChannel : public Channel {
+public:
+
+    using Channel::Channel;
+
+    void Connect();
+    void Close() {};
+
+    void Send(const vector<u8> &buf);
+    void Recv(vector<u8> &buf);
+
+private:
+
+    void ConnectClient();
+    void ConnectServer();
+
+    boost::asio::io_service ios_sender;
+    boost::asio::io_service ios_receiver;
+    tcp::socket *ssock;
+    tcp::socket *rsock;
 };
 
 } // ncomm
