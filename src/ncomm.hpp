@@ -16,6 +16,8 @@ using boost::asio::ip::tcp;
 typedef uint8_t u8;
 typedef size_t partyid_t;
 
+size_t base_port = 5000;
+
 enum channel_role_t {
     SERVER,
     CLIENT,
