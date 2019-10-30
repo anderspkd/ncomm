@@ -29,21 +29,19 @@ typedef struct {
     channel_role_t  role;
 } channel_info_t;
 
-// TODO: local/remote should be server/client
-
 class Channel {
 public:
 
-    const channel_info_t& LocalInfo() const {
-	return local_info;
+    const channel_info_t& ServerInfo() const {
+	return server_info;
     };
 
-    const channel_info_t& RemoteInfo() const {
-	return remote_info;
+    const channel_info_t& ClientInfo() const {
+	return client_info;
     }
 
-    Channel(const channel_info_t local_info, const channel_info_t remote_info)
-	: local_info{local_info}, remote_info{remote_info} {};
+    Channel(const channel_info_t server_info, const channel_info_t client_info)
+	: server_info{server_info}, client_info{client_info} {};
 
     virtual void Connect() = 0;
     virtual void Close() = 0;
@@ -52,8 +50,8 @@ public:
 
 private:
 
-    channel_info_t local_info;
-    channel_info_t remote_info;
+    channel_info_t server_info;
+    channel_info_t client_info;
 };
 
 class DummyChannel : public Channel {

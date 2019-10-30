@@ -3,7 +3,7 @@
 namespace ncomm {
 
 void AsioChannel::ConnectClient() {
-    auto info = RemoteInfo();
+    auto info = ClientInfo();
     const auto addr = boost::asio::ip::address::from_string(info.hostname);
     tcp::endpoint ep(addr, info.port);
     ssock = new tcp::socket(ios_sender);
@@ -17,7 +17,7 @@ void AsioChannel::ConnectClient() {
 }
 
 void AsioChannel::ConnectServer() {
-    auto info = LocalInfo();
+    auto info = ServerInfo();
     tcp::acceptor acceptor(ios_receiver, tcp::endpoint(tcp::v4(), info.port));
     rsock = new tcp::socket(ios_receiver);
     acceptor.accept(*rsock);
