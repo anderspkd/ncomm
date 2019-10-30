@@ -1,5 +1,4 @@
 #include "ncomm.hpp"
-#include <iostream>
 
 namespace ncomm {
 
@@ -39,17 +38,11 @@ void AsioChannel::Connect() {
 	throw std::runtime_error("use DummyChannel when connecting to self");
 
     if (linfo.id < rinfo.id) {
-	std::cerr << "server ";
 	ConnectServer();
-	std::cerr << "done\nclient ";
 	ConnectClient();
-	std::cerr << "done\n";
     } else {
-	std::cerr << "client ";
 	ConnectClient();
-	std::cerr << "done\nserver ";
 	ConnectServer();
-	std::cerr << "done\n";
     }
 }
 
