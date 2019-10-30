@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     ncomm::AsioChannel chl(info0, info1);
     chl.Connect();
 
-    vector<u8> buf {1,2,3,4,5,6,7, (u8)argc};
+    vector<u8> buf (100, (u8)argc);
     vector<u8> rbuf (buf.size());
 
     chl.Send(buf);

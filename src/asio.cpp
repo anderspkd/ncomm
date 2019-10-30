@@ -28,16 +28,16 @@ void AsioChannel::ConnectServer() {
 void AsioChannel::Connect() {
 
     // validate connection information
-    auto linfo = LocalInfo();
-    auto rinfo = RemoteInfo();
+    auto sinfo = ServerInfo();
+    auto cinfo = ClientInfo();
 
-    if (linfo.role == rinfo.role)
+    if (sinfo.role == cinfo.role)
 	throw std::runtime_error("remote and local with same role");
 
-    if (linfo.id == rinfo.id)
+    if (sinfo.id == cinfo.id)
 	throw std::runtime_error("use DummyChannel when connecting to self");
 
-    if (linfo.id < rinfo.id) {
+    if (sinfo.id < cinfo.id) {
 	ConnectServer();
 	ConnectClient();
     } else {
