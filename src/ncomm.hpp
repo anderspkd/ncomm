@@ -4,24 +4,23 @@
 #include <cstdint>
 #include <vector>
 
+#include <boost/asio.hpp>
+
 namespace ncomm {
 
 using std::vector;
 using std::string;
+
+using boost::asio::ip::tcp;
 
 typedef uint8_t u8;
 typedef size_t partyid_t;
 
 enum channel_role_t {
     SERVER,
-    CLIENT
+    CLIENT,
+    DUMMY
 };
-
-typedef struct {
-    partyid_t       id;
-    size_t          size;
-    vector<string>  addrs;
-} network_info_t;
 
 typedef struct {
     partyid_t       id;
@@ -44,93 +43,40 @@ public:
     Channel(const channel_info_t local_info, const channel_info_t remote_info)
 	: local_info{local_info}, remote_info{remote_info} {};
 
-    virtual void Connect();
-    virtual void Close();
+    virtual void Connect() = 0;
+    virtual void Close() = 0;
+    virtual void Send(const vector<u8> &buf) = 0;
+    virtual void Recv(vector<u8> &buf) = 0;
 
 private:
 
     channel_info_t local_info;
     channel_info_t remote_info;
-}
+};
 
-class Network {
+class DummyChannel : public Channel {
 public:
 
-    // Size of network
-    size_t Size() const {
-	return n;
+    static channel_info_t DummyInfo(const partyid_t id) {
+	channel_info_t info = {
+	    .id = id,
+	    .port = -1,
+	    .hostname = "",
+	    .role = DUMMY
+	};
+	return info;
     };
 
-    // Identity of local party
-    partyid_t LocalId() const {
-	return id;
-    };
+    DummyChannel(partyid_t id)
+	: Channel{DummyChannel::DummyInfo(id), DummyChannel::DummyInfo(id)} {};
 
-    // Establish the network object, but do not connect to anything.
-    Network(const struct network_info_t info);
-
-    // Establish connections between parties. Refer to documentation in the
-    // Channel class for more information.
-    void Connect();
-
-    // Close all connections;
-    void Close() {
-	for (auto &c : channels) c->Close();
-    };
-
-    inline void ExchangeAll(
-	const vector<vector<u8>> &outbuf,
-	vector<vector<u8>> &inbuf) {
-
-	// send first
-	for (size_t i = 0; i < n; i++)
-	    channels[i]->Send(outbuf[i]);
-	for (size_t i = 0; i < n; i++)
-	    channels[i]->Recv(inbuf[i]);
-    };
-
-    inline ExchangeRing(
-	const vector<u8> &outbuf,
-	vector<u8> &inbuf,
-	bool reverse_order = false;
-	) {
-
-	if (reverse_order) {
-	    PrevChannel()->Send(outbuf);
-	    NextChannel()->Recv(inbuf);
-	} else {
-	    NextChannel()->Send(outbuf);
-	    PrevChannel()->Recv(inbuf);
-	}
-    };
-
-    inline void Send(
-	const partyid_t receiver_id,
-	const vector<u8> &buf) {
-
-	channels[receiver_id]->Send(buf);
-    };
-
-    inline void Recv(
-	const partyid_t sender_id,
-	vector<u8> &buf) {
-
-	channels[sender_id]->Recv(buf);
-    };
+    void Connect() {};
+    void Close() {};
+    void Send(const vector<u8> &buf);
+    void Recv(vector<u8> &buf);
 
 private:
-    size_t n;
-    partyid_t id;
-
-    vector<Channel *> channels;
-
-    inline Channel *PrevChannel() const {
-	return channels[id ? id - 1 : n - 1];
-    };
-
-    inline Channel *NextChannel() const {
-	return channels[id == n - 1 ? 0 : id + 1];
-    };
+    vector<u8> buffer;
 };
 
 } // ncomm
