@@ -6,6 +6,22 @@
 
 #include <boost/asio.hpp>
 
+#ifdef NCOMM_DEBUG
+
+#include <iostream>
+#define DEBUG std::cerr
+
+#else
+
+struct Sink {
+    template<typename T>
+    Sink operator<<(T x) { (void)x; return *this; };
+};
+Sink __debug_sink;
+#define DEBUG __debug_sink
+
+#endif
+
 namespace ncomm {
 
 using std::vector;
@@ -16,7 +32,7 @@ using boost::asio::ip::tcp;
 typedef uint8_t u8;
 typedef size_t partyid_t;
 
-size_t base_port = 5000;
+extern int base_port;
 
 enum channel_role_t {
     SERVER,
@@ -42,8 +58,19 @@ public:
 	return client_info;
     }
 
+    partyid_t GetRemoteId() const {
+	return remote_id;
+    };
+
+    partyid_t GetLocalId() const {
+	return local_id;
+    };
+
     Channel(const channel_info_t server_info, const channel_info_t client_info)
-	: server_info{server_info}, client_info{client_info} {};
+	: server_info{server_info}, client_info{client_info},
+	  remote_id{client_info.id}, local_id{server_info.id} {};
+
+    virtual ~Channel() {};
 
     virtual void Connect() = 0;
     virtual void Close() = 0;
@@ -54,6 +81,9 @@ private:
 
     channel_info_t server_info;
     channel_info_t client_info;
+
+    partyid_t remote_id;
+    partyid_t local_id;
 };
 
 class DummyChannel : public Channel {
@@ -72,6 +102,8 @@ public:
     DummyChannel(partyid_t id)
 	: Channel{DummyChannel::DummyInfo(id), DummyChannel::DummyInfo(id)} {};
 
+    ~DummyChannel() {};
+
     void Connect() {};
     void Close() {};
     void Send(const vector<u8> &buf);
@@ -85,6 +117,8 @@ class AsioChannel : public Channel {
 public:
 
     using Channel::Channel;
+
+    ~AsioChannel() {};
 
     void Connect();
     void Close() {};
@@ -101,6 +135,44 @@ private:
     boost::asio::io_service ios_receiver;
     tcp::socket *ssock;
     tcp::socket *rsock;
+};
+
+typedef struct {
+    partyid_t id;
+    size_t n;
+    vector<string> addrs;
+} network_info_t;
+
+enum exchange_order {
+    INCREASING,
+    DECREASING
+};
+
+class Network {
+public:
+
+    Network(const network_info_t &info) : info{info} {};
+    Network(const string network_info_filename);
+
+    void Connect();
+    void Close();
+
+    const Channel *operator[](const size_t idx) const {
+	return peers[idx];
+    };
+
+    void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs);
+    void BroadcastSend(const vector<u8> &buf);
+    void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf);
+    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = INCREASING);
+
+private:
+
+    network_info_t info;
+    vector<Channel *> peers;
+
+    Channel *GetNextPeer() const;
+    Channel *GetPrevPeer() const;
 };
 
 } // ncomm

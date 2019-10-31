@@ -47,6 +47,7 @@ void AsioChannel::Connect() {
 }
 
 void AsioChannel::Send(const vector<u8> &buf) {
+    DEBUG << "send\n";
     boost::system::error_code err;
     boost::asio::write(*ssock,
 		       boost::asio::buffer(buf),
@@ -56,6 +57,7 @@ void AsioChannel::Send(const vector<u8> &buf) {
 }
 
 void AsioChannel::Recv(vector<u8> &buf) {
+    DEBUG << "recv\n";
     boost::asio::read(*rsock, boost::asio::buffer(buf, buf.size()));
 }
 
