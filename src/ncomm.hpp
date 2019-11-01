@@ -9,7 +9,7 @@
 #ifdef NCOMM_DEBUG
 
 #include <iostream>
-#define DEBUG std::cerr
+#define DEBUG std::cerr << "ncomm:" << __FILE__ << ":" << __LINE__ << " "
 
 #else
 
@@ -17,8 +17,8 @@ struct Sink {
     template<typename T>
     Sink operator<<(T x) { (void)x; return *this; };
 };
-Sink __debug_sink;
-#define DEBUG __debug_sink
+
+#define DEBUG Sink()
 
 #endif
 
@@ -31,8 +31,6 @@ using boost::asio::ip::tcp;
 
 typedef uint8_t u8;
 typedef size_t partyid_t;
-
-extern int base_port;
 
 enum channel_role_t {
     SERVER,
@@ -161,6 +159,14 @@ public:
 	return peers[idx];
     };
 
+    void SetBasePort(const int port) {
+	base_port = port;
+    };
+
+    int GetBasePort() const {
+	return base_port;
+    };
+
     void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs);
     void BroadcastSend(const vector<u8> &buf);
     void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf);
@@ -173,6 +179,8 @@ private:
 
     Channel *GetNextPeer() const;
     Channel *GetPrevPeer() const;
+
+    int base_port = 5000;
 };
 
 } // ncomm

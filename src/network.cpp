@@ -2,8 +2,6 @@
 
 namespace ncomm {
 
-int base_port = 5000;
-
 void Network::Close() {
     for (auto &peer : peers) {
 	peer->Close();
