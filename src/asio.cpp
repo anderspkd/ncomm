@@ -3,7 +3,10 @@
 namespace ncomm {
 
 void AsioChannel::ConnectClient() {
+
     auto info = ClientInfo();
+    NCOMM_L("client: %s", info.to_string().c_str());
+
     const auto addr = boost::asio::ip::address::from_string(info.hostname);
     tcp::endpoint ep(addr, info.port);
     ssock = new tcp::socket(ios_sender);
@@ -17,7 +20,10 @@ void AsioChannel::ConnectClient() {
 }
 
 void AsioChannel::ConnectServer() {
+
     auto info = ServerInfo();
+    NCOMM_L("server: %s", info.to_string().c_str());
+
     tcp::acceptor acceptor(ios_receiver, tcp::endpoint(tcp::v4(), info.port));
     rsock = new tcp::socket(ios_receiver);
     acceptor.accept(*rsock);
@@ -47,7 +53,6 @@ void AsioChannel::Connect() {
 }
 
 void AsioChannel::Send(const vector<u8> &buf) {
-    DEBUG << "send\n";
     boost::system::error_code err;
     boost::asio::write(*ssock,
 		       boost::asio::buffer(buf),
@@ -57,7 +62,6 @@ void AsioChannel::Send(const vector<u8> &buf) {
 }
 
 void AsioChannel::Recv(vector<u8> &buf) {
-    DEBUG << "recv\n";
     boost::asio::read(*rsock, boost::asio::buffer(buf, buf.size()));
 }
 

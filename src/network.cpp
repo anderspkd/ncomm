@@ -2,6 +2,29 @@
 
 namespace ncomm {
 
+Network::Network(const partyid_t id, const string network_info_filename) {
+    std::string line;
+    std::ifstream network_info (network_info_filename);
+    if (!network_info.is_open())
+	throw std::runtime_error("could not open network info file");
+
+    size_t n = 0;
+    std::vector<std::string> addrs;
+
+    while (std::getline(network_info, line)) {
+	addrs.emplace_back(line);
+	n++;
+    }
+
+    network_info.close();
+
+    info = {
+	.id = id,
+	.n  = n,
+	.addrs = addrs
+    };
+}
+
 void Network::Close() {
     for (auto &peer : peers) {
 	peer->Close();
@@ -9,8 +32,26 @@ void Network::Close() {
     }
 }
 
-Network::Network(const string network_info_filename) {
-    (void)network_info_filename;
+channel_info_t Network::MakeClientInfo(const partyid_t id, const string hostname) const {
+    auto offset = info.n * id + info.id;
+    channel_info_t cinfo = {
+	.id = id,
+	.port = base_port + static_cast<int>(offset),
+	.hostname = hostname,
+	.role = CLIENT
+    };
+    return cinfo;
+}
+
+channel_info_t Network::MakeServerInfo(const partyid_t id) const {
+    auto offset = info.n * info.id + id;
+    channel_info_t sinfo = {
+	.id = info.id,
+	.port = base_port + static_cast<int>(offset),
+	.hostname = "0.0.0.0",
+	.role = SERVER
+    };
+    return sinfo;
 }
 
 void Network::Connect() {
@@ -20,36 +61,20 @@ void Network::Connect() {
 
     peers.resize(n);
 
-    DEBUG << "network id=" << myid << ", n=" << n << "\n";
-
     for (size_t i = 0; i < n; i++) {
 
 	if (i == myid) {
 	    peers[i] = new DummyChannel(myid);
 	    peers[i]->Connect();
 
-	    DEBUG << "connected dummy\n";
-
 	} else {
 
-	    channel_info_t server = {
-		.id = myid,
-		.port = base_port + static_cast<int>(myid),
-		.hostname = "0.0.0.0",
-		.role = SERVER
-	    };
-
-	    channel_info_t client = {
-		.id = i,
-		.port = base_port + static_cast<int>(i),
-		.hostname = info.addrs[i],
-		.role = CLIENT
-	    };
+	    auto server = MakeServerInfo(i);
+	    auto client = MakeClientInfo(i, info.addrs[i]);
 
 	    peers[i] = new AsioChannel(server, client);
 	    peers[i]->Connect();
 
-	    DEBUG << "connected to " << i << "\n";
 	}
     }
 }
@@ -81,14 +106,10 @@ void Network::BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) {
 void Network::ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) {
     if (order == exchange_order::INCREASING) {
 	GetNextPeer()->Send(sbuf);
-	DEBUG << "sent to next\n";
 	GetPrevPeer()->Recv(rbuf);
-	DEBUG << "recv from prev\n";
     } else {
 	GetPrevPeer()->Send(sbuf);
-	DEBUG << "sent to prev\n";
 	GetNextPeer()->Recv(rbuf);
-	DEBUG << "recv from next\n";
     }
 }
 

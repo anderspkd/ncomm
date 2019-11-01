@@ -11,7 +11,7 @@ SRCS += src/network.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 ifeq ($(DEBUG), 1)
-	CXXFLAGS += -DNCOMM_DEBUG
+	CXXFLAGS += -DNCOMM_PRINT
 endif
 
 default: $(OBJS)

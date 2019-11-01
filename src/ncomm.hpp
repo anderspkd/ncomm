@@ -3,23 +3,19 @@
 
 #include <cstdint>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include <boost/asio.hpp>
 
-#ifdef NCOMM_DEBUG
-
-#include <iostream>
-#define DEBUG std::cerr << "ncomm:" << __FILE__ << ":" << __LINE__ << " "
-
+#ifdef NCOMM_PRINT
+#define NCOMM_L(...) do {						\
+	fprintf(stderr, "[%s:%d] ", __FILE__, __LINE__);		\
+	fprintf(stderr, ##__VA_ARGS__);					\
+	fputs("\n", stderr);						\
+    } while(0)
 #else
-
-struct Sink {
-    template<typename T>
-    Sink operator<<(T x) { (void)x; return *this; };
-};
-
-#define DEBUG Sink()
-
+#define NCOMM_L(...) do { } while(0)
 #endif
 
 namespace ncomm {
@@ -39,10 +35,21 @@ enum channel_role_t {
 };
 
 typedef struct {
+
     partyid_t       id;
     int             port;
     string          hostname;
     channel_role_t  role;
+
+    string to_string() const {
+	std::stringstream ss;
+	ss << "<id=" << id << ", " <<
+	    "addr=\"" << hostname << "\", " <<
+	    "port=" << port << ", " <<
+	    "role=" << role << ">";
+	return ss.str();
+    };
+
 } channel_info_t;
 
 class Channel {
@@ -150,7 +157,7 @@ class Network {
 public:
 
     Network(const network_info_t &info) : info{info} {};
-    Network(const string network_info_filename);
+    Network(const partyid_t id, const string network_info_filename);
 
     void Connect();
     void Close();
@@ -179,6 +186,9 @@ private:
 
     Channel *GetNextPeer() const;
     Channel *GetPrevPeer() const;
+
+    channel_info_t MakeClientInfo(const partyid_t id, const string hostname) const;
+    channel_info_t MakeServerInfo(const partyid_t id) const;
 
     int base_port = 5000;
 };
