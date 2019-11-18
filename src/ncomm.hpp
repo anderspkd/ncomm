@@ -162,7 +162,7 @@ public:
     void Connect();
     void Close();
 
-    const Channel *operator[](const size_t idx) const {
+    const Channel* operator[](const size_t idx) const {
 	return peers[idx];
     };
 
@@ -184,8 +184,8 @@ private:
     network_info_t info;
     vector<Channel *> peers;
 
-    Channel *GetNextPeer() const;
-    Channel *GetPrevPeer() const;
+    Channel* GetNextPeer() const;
+    Channel* GetPrevPeer() const;
 
     channel_info_t MakeClientInfo(const partyid_t id, const string hostname) const;
     channel_info_t MakeServerInfo(const partyid_t id) const;
