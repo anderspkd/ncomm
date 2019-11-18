@@ -41,35 +41,20 @@ typedef struct {
     string          hostname;
     channel_role_t  role;
 
-    string to_string() const {
-	std::stringstream ss;
-	ss << "<id=" << id << ", " <<
-	    "addr=\"" << hostname << "\", " <<
-	    "port=" << port << ", " <<
-	    "role=" << role << ">";
-	return ss.str();
-    };
+    string to_string() const;
 
 } channel_info_t;
 
 class Channel {
 public:
 
-    const channel_info_t& ServerInfo() const {
-	return server_info;
-    };
+    const channel_info_t& ServerInfo() const;
 
-    const channel_info_t& ClientInfo() const {
-	return client_info;
-    }
+    const channel_info_t& ClientInfo() const;
 
-    partyid_t GetRemoteId() const {
-	return remote_id;
-    };
+    partyid_t GetRemoteId() const;
 
-    partyid_t GetLocalId() const {
-	return local_id;
-    };
+    partyid_t GetLocalId() const;
 
     Channel(const channel_info_t server_info, const channel_info_t client_info)
 	: server_info{server_info}, client_info{client_info},
@@ -94,15 +79,7 @@ private:
 class DummyChannel : public Channel {
 public:
 
-    static channel_info_t DummyInfo(const partyid_t id) {
-	channel_info_t info = {
-	    .id = id,
-	    .port = -1,
-	    .hostname = "",
-	    .role = DUMMY
-	};
-	return info;
-    };
+    static channel_info_t DummyInfo(const partyid_t id);
 
     DummyChannel(partyid_t id)
 	: Channel{DummyChannel::DummyInfo(id), DummyChannel::DummyInfo(id)} {};
@@ -162,17 +139,11 @@ public:
     void Connect();
     void Close();
 
-    const Channel* operator[](const size_t idx) const {
-	return peers[idx];
-    };
+    const Channel* operator[](const size_t idx) const;
 
-    void SetBasePort(const int port) {
-	base_port = port;
-    };
+    void SetBasePort(const int port);
 
-    int GetBasePort() const {
-	return base_port;
-    };
+    int GetBasePort() const;
 
     void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs);
     void BroadcastSend(const vector<u8> &buf);

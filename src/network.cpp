@@ -25,6 +25,18 @@ Network::Network(const partyid_t id, const string network_info_filename) {
     };
 }
 
+const Channel* Network::operator[](const size_t idx) const {
+    return peers[idx];
+}
+
+void Network::SetBasePort(const int port) {
+    base_port = port;
+}
+
+int Network::GetBasePort() const {
+    return base_port;
+}
+
 void Network::Close() {
     for (auto &peer : peers) {
 	peer->Close();

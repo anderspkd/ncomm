@@ -4,8 +4,7 @@ LDFLAGS  = -lboost_system -lpthread
 
 LIB_NAME = ncomm.a
 
-SRCS  = src/dummy.cpp
-SRCS += src/asio.cpp
+SRCS += src/channel.cpp
 SRCS += src/network.cpp
 
 OBJS = $(SRCS:.cpp=.o)

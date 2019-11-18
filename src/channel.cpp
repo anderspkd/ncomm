@@ -2,6 +2,50 @@
 
 namespace ncomm {
 
+string channel_info_t::to_string() const {
+    std::stringstream ss;
+    ss << "<id=" << id << ", " <<
+	"addr=\"" << hostname << "\", " <<
+	"port=" << port << ", " <<
+	"role=" << role << ">";
+    return ss.str();
+}
+
+const channel_info_t& Channel::ServerInfo() const {
+    return server_info;
+}
+
+const channel_info_t& Channel::ClientInfo() const {
+    return client_info;
+}
+
+partyid_t Channel::GetRemoteId() const {
+    return remote_id;
+}
+
+partyid_t Channel::GetLocalId() const {
+    return local_id;
+}
+
+channel_info_t DummyChannel::DummyInfo(const partyid_t id) {
+    channel_info_t info = {
+	.id = id,
+	.port = -1,
+	.hostname = "",
+	.role = DUMMY
+    };
+    return info;
+}
+
+void DummyChannel::Send(const vector<u8> &buf) {
+    buffer = buf;
+}
+
+void DummyChannel::Recv(vector<u8> &buf) {
+    buf = buffer;
+    buffer.clear();
+}
+
 void AsioChannel::ConnectClient() {
 
     auto info = ClientInfo();
