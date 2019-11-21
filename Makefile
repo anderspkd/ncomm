@@ -4,8 +4,8 @@ LDFLAGS  = -lboost_system -lpthread
 
 LIB_NAME = ncomm.a
 
-SRCS += src/channel.cpp
-SRCS += src/network.cpp
+SRCS += source/channel.cpp
+SRCS += source/network.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
@@ -17,7 +17,7 @@ default: $(OBJS)
 	ar rcs $(LIB_NAME) $(OBJS)
 
 clean:
-	find src/ -iname "*.o" -delete
+	find source/ -iname "*.o" -delete
 	rm -f $(LIB_NAME)
 
 .SUFFIXES: .cpp .o

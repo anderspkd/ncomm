@@ -1,4 +1,4 @@
-#include "ncomm.hpp"
+#include "../include/ncomm.hpp"
 
 namespace ncomm {
 

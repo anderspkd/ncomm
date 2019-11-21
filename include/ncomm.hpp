@@ -65,7 +65,9 @@ public:
     virtual void Connect() = 0;
     virtual void Close() = 0;
     virtual void Send(const vector<u8> &buf) = 0;
+    virtual void Send(const u8 *buf, size_t size) = 0;
     virtual void Recv(vector<u8> &buf) = 0;
+    virtual void Recv(u8 *buf, size_t size) = 0;
 
 private:
 
@@ -89,7 +91,9 @@ public:
     void Connect() {};
     void Close() {};
     void Send(const vector<u8> &buf);
+    void Send(const u8 *buf, size_t size);
     void Recv(vector<u8> &buf);
+    void Recv(u8 *buf, size_t size);
 
 private:
     vector<u8> buffer;
@@ -106,7 +110,9 @@ public:
     void Close() {};
 
     void Send(const vector<u8> &buf);
+    void Send(const u8 *buf, size_t size);
     void Recv(vector<u8> &buf);
+    void Recv(u8 *buf, size_t size);
 
 private:
 
