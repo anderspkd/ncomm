@@ -1,4 +1,2 @@
 /ncomm.a
-/src/*.o
-/test_asio
-/test_dummy
+source/*.o
