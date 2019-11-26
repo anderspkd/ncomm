@@ -240,6 +240,9 @@ public:
     void SetBasePort(const int port);
 
     int GetBasePort() const;
+    size_t Size() const;
+    partyid_t GetId() const;
+    network_info_t GetInfo() const;
 
     void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs);
     void BroadcastSend(const vector<u8> &buf);

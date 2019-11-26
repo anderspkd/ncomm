@@ -37,6 +37,18 @@ int Network::GetBasePort() const {
     return base_port;
 }
 
+size_t Network::Size() const {
+    return info.n;
+}
+
+partyid_t Network::GetId() const {
+    return info.id;
+}
+
+network_info_t Network::GetInf() const {
+    return info;
+}
+
 void Network::Close() {
     for (auto &peer : peers) {
 	peer->Close();
