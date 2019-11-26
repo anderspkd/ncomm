@@ -249,6 +249,12 @@ public:
     void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf);
     void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = INCREASING);
 
+    void SendToNext(const vector<u8> &buf);
+    void RecvFromNext(vector<u8> &buf);
+
+    void SendToPrev(const vector<u8> &buf);
+    void RecvFromPrev(vector <u8> &buf);
+
 private:
 
     network_info_t info;

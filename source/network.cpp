@@ -137,4 +137,20 @@ void Network::ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_or
     }
 }
 
+void Network::SendToNext(const vector<u8> &buf) {
+    GetNextPeer()->Send(buf);
+}
+
+void Network::RecvFromNext(vector<u8> &buf) {
+    GetNextPeer()->Recv(buf);
+}
+
+void Network::SendToPrev(const vector<u8> &buf) {
+    GetPrevPeer()->Send(buf);
+}
+
+void Network::RecvFromPrev(vector<u8> &buf) {
+    GetPrevPeer()->Recv(buf);
+}
+
 } // ncomm
