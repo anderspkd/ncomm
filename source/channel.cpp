@@ -27,6 +27,15 @@ partyid_t Channel::GetLocalId() const {
     return local_id;
 }
 
+bool Channel::IsAlive() const {
+    return this->alive;
+}
+
+void Channel::Exchange(const vector<u8> &sbuf, vector<u8> &rbuf) {
+    this->Send(sbuf);
+    this->Recv(rbuf);
+}
+
 channel_info_t DummyChannel::DummyInfo(const partyid_t id) {
     channel_info_t info = {
 	.id = id,
@@ -35,6 +44,14 @@ channel_info_t DummyChannel::DummyInfo(const partyid_t id) {
 	.role = DUMMY
     };
     return info;
+}
+
+void DummyChannel::Connect() {
+    this->alive = true;
+}
+
+void DummyChannel::Close() {
+    this->alive = false;
 }
 
 void DummyChannel::Send(const vector<u8> &buf) {
@@ -76,6 +93,9 @@ void AsioChannel::ConnectServer() {
 }
 
 void AsioChannel::Connect() {
+
+    if (alive)
+	return;
 
     // validate connection information
     auto sinfo = ServerInfo();

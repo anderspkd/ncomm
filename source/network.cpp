@@ -60,7 +60,7 @@ channel_info_t Network::MakeServerInfo(const partyid_t id) const {
     channel_info_t sinfo = {
 	.id = info.id,
 	.port = base_port + static_cast<int>(offset),
-	.hostname = "0.0.0.0",
+	.hostname = NCOMM_LOCALHOST_IP,
 	.role = SERVER
     };
     return sinfo;
@@ -100,10 +100,10 @@ Channel *Network::GetPrevPeer() const {
 }
 
 void Network::ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) {
-    for (auto &peer : peers)
-	peer->Send(sbufs[peer->GetRemoteId()]);
-    for (auto &peer : peers)
-	peer->Recv(rbufs[peer->GetRemoteId()]);
+    for (auto &peer : peers) {
+	const auto rid = peer->GetRemoteId();
+	peer->Exchange(sbufs[rid], rbufs[rid]);
+    }
 }
 
 void Network::BroadcastSend(const vector<u8> &buf) {
@@ -119,7 +119,7 @@ void Network::ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_or
     if (order == exchange_order::INCREASING) {
 	GetNextPeer()->Send(sbuf);
 	GetPrevPeer()->Recv(rbuf);
-    } else {
+    } else { // order == exchange_order::DECREASING
 	GetPrevPeer()->Send(sbuf);
 	GetNextPeer()->Recv(rbuf);
     }

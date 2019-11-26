@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -Wall -Wextra -Werror -march=native -fpie -g -O2
+CXXFLAGS = -Wall -Wextra -Werror -march=native -fpie -std=c++17 -g -O2
 LDFLAGS  = -lboost_system -lpthread
 
 LIB_NAME = ncomm.a
@@ -16,8 +16,13 @@ endif
 default: $(OBJS)
 	ar rcs $(LIB_NAME) $(OBJS)
 
+test: default test/test-main.o
+	$(CXX) $(CXXFLAGS) test/test-main.o test/tests.cpp -o run_test $(LDFLAGS) ncomm.a
+	@./run_test
+
 clean:
 	find source/ -iname "*.o" -delete
+	find test/ -iname "*.o" -delete
 	rm -f $(LIB_NAME)
 
 .SUFFIXES: .cpp .o
@@ -25,4 +30,4 @@ clean:
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -c -o $@ $< $(LDFLAGS)
 
-.PHONY: default clean
+.PHONY: default clean test
