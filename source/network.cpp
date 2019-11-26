@@ -45,7 +45,7 @@ partyid_t Network::GetId() const {
     return info.id;
 }
 
-network_info_t Network::GetInf() const {
+network_info_t Network::GetInfo() const {
     return info;
 }
 

@@ -1,2 +1,4 @@
 /ncomm.a
 source/*.o
+test/*
+run_test
