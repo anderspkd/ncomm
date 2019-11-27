@@ -25,7 +25,7 @@ Network::Network(const partyid_t id, const string network_info_filename) {
     };
 }
 
-const Channel* Network::operator[](const size_t idx) const {
+Channel* Network::operator[](const size_t idx) const {
     return peers[idx];
 }
 
