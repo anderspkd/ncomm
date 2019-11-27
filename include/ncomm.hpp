@@ -235,7 +235,7 @@ public:
     void Connect();
     void Close();
 
-    const Channel* operator[](const size_t idx) const;
+    Channel* operator[](const size_t idx) const;
 
     void SetBasePort(const int port);
 
