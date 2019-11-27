@@ -103,54 +103,54 @@ void Network::Connect() {
     }
 }
 
-Channel *Network::GetNextPeer() const {
+Channel *Network::NextPeer() const {
     return info.id == info.n - 1 ? peers[0] : peers[info.id+1];
 }
 
-Channel *Network::GetPrevPeer() const {
+Channel *Network::PrevPeer() const {
     return info.id == 0 ? peers[info.n-1] : peers[info.id-1];
 }
 
-void Network::ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) {
+void Network::ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const {
     for (auto &peer : peers) {
 	const auto rid = peer->GetRemoteId();
 	peer->Exchange(sbufs[rid], rbufs[rid]);
     }
 }
 
-void Network::BroadcastSend(const vector<u8> &buf) {
+void Network::BroadcastSend(const vector<u8> &buf) const {
     for (auto &peer : peers)
 	peer->Send(buf);
 }
 
-void Network::BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) {
+void Network::BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) const {
     peers[broadcaster]->Recv(buf);
 }
 
-void Network::ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) {
+void Network::ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) const {
     if (order == exchange_order::INCREASING) {
-	GetNextPeer()->Send(sbuf);
-	GetPrevPeer()->Recv(rbuf);
+	NextPeer()->Send(sbuf);
+	PrevPeer()->Recv(rbuf);
     } else { // order == exchange_order::DECREASING
-	GetPrevPeer()->Send(sbuf);
-	GetNextPeer()->Recv(rbuf);
+	PrevPeer()->Send(sbuf);
+	NextPeer()->Recv(rbuf);
     }
 }
 
-void Network::SendToNext(const vector<u8> &buf) {
-    GetNextPeer()->Send(buf);
+inline void Network::SendToNext(const vector<u8> &buf) const {
+    NextPeer()->Send(buf);
 }
 
-void Network::RecvFromNext(vector<u8> &buf) {
-    GetNextPeer()->Recv(buf);
+inline void Network::RecvFromNext(vector<u8> &buf) const {
+    NextPeer()->Recv(buf);
 }
 
-void Network::SendToPrev(const vector<u8> &buf) {
-    GetPrevPeer()->Send(buf);
+inline void Network::SendToPrev(const vector<u8> &buf) const {
+    PrevPeer()->Send(buf);
 }
 
-void Network::RecvFromPrev(vector<u8> &buf) {
-    GetPrevPeer()->Recv(buf);
+inline void Network::RecvFromPrev(vector<u8> &buf) const {
+    PrevPeer()->Recv(buf);
 }
 
 } // ncomm

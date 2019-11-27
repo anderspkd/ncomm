@@ -244,24 +244,23 @@ public:
     partyid_t GetId() const;
     network_info_t GetInfo() const;
 
-    void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs);
-    void BroadcastSend(const vector<u8> &buf);
-    void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf);
-    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = INCREASING);
+    void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const;
+    void BroadcastSend(const vector<u8> &buf) const;
+    void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) const;
+    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = INCREASING) const;
 
-    void SendToNext(const vector<u8> &buf);
-    void RecvFromNext(vector<u8> &buf);
+    inline void SendToNext(const vector<u8> &buf) const;
+    inline void RecvFromNext(vector<u8> &buf) const;
+    inline void SendToPrev(const vector<u8> &buf) const;
+    inline void RecvFromPrev(vector <u8> &buf) const;
 
-    void SendToPrev(const vector<u8> &buf);
-    void RecvFromPrev(vector <u8> &buf);
+    Channel* NextPeer() const;
+    Channel* PrevPeer() const;
 
 private:
 
     network_info_t info;
     vector<Channel *> peers;
-
-    Channel* GetNextPeer() const;
-    Channel* GetPrevPeer() const;
 
     channel_info_t MakeClientInfo(const partyid_t id, const string hostname) const;
     channel_info_t MakeServerInfo(const partyid_t id) const;
