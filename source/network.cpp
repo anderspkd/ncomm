@@ -114,6 +114,11 @@ Channel *Network::PrevPeer() const {
 void Network::ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const {
     for (auto &peer : peers) {
 	const auto rid = peer->GetRemoteId();
+	// In case caller hasn't reserved space in receiver buffer, we assume
+	// that we'll be receiving the same amount of data as we're sending.
+	// TODO: emit warning.
+	if (!rbufs[rid].size())
+	    rbufs[rid].resize(sbufs[rid].size());
 	peer->Exchange(sbufs[rid], rbufs[rid]);
     }
 }

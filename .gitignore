@@ -2,3 +2,4 @@
 source/*.o
 test/*
 run_test
+test/test-main.o
