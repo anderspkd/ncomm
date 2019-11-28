@@ -2,7 +2,7 @@ CXX      = g++
 CXXFLAGS = -Wall -Wextra -Werror -march=native -fpie -std=c++17 -g -O2
 LDFLAGS  = -lboost_system -lpthread
 
-LIB_NAME = ncomm.a
+LIB_NAME = libncomm.a
 
 SRCS += source/channel.cpp
 SRCS += source/network.cpp
