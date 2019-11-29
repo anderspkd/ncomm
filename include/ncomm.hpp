@@ -247,7 +247,7 @@ public:
     void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const;
     void BroadcastSend(const vector<u8> &buf) const;
     void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) const;
-    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = INCREASING) const;
+    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = DECREASING) const;
 
     inline void SendToNext(const vector<u8> &buf) const;
     inline void RecvFromNext(vector<u8> &buf) const;
