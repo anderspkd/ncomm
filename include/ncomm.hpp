@@ -23,11 +23,13 @@
 #define _NCOMM_HPP
 
 #include <cstdint>
+#include <cassert>
 #include <vector>
 #include <fstream>
 #include <sstream>
-
-#include <boost/asio.hpp>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 #ifdef NCOMM_PRINT
 #define NCOMM_L(...) do {						\
@@ -43,182 +45,141 @@
 
 namespace ncomm {
 
-using std::vector;
-using std::string;
+typedef unsigned int  partyid_t;
 
-using boost::asio::ip::tcp;
-
-typedef uint8_t u8;
-typedef size_t partyid_t;
-
-// A channel can be either SERVER, CLIENT or DUMMY. The former two are self
-// explanatory. A DUMMY channel is a special channel which "connects to itself"
-// and is needed in order to support the following login in a transparent way:
-//
-//  For all parties, P_i sends to P_j.
-//
-// For the case when i = j, a DUMMY channel is used.
-enum channel_role_t {
+enum channel_role {
     SERVER,
     CLIENT,
     DUMMY
 };
 
-// A channel consists of an identifier, a port, a hostname and which role the
-// channel is playing.
-//
-// The values of `id', `port' and `hostname' depend on `role' in the following
-// way:
-//
-// If `role == SERVER' then `id' is the identifier of this machine, `port' is
-// the port we're using and `hostname' is the string defined by
-// NCOMM_LOCALHOST_IP.
-//
-// If `role == CLIENT' then `id' is the identifier of the remote machine, `port'
-// is the port we're connecting to and `hostname' is the IP of the remote
-// machine.
-//
-// If `role == DUMMY', then `id' is the local identifier while `port == -1' and
-// `hostname == ""'.
 typedef struct {
 
-    partyid_t       id;
+    partyid_t       local_id;
+    partyid_t       remote_id;
     int             port;
-    string          hostname;
-    channel_role_t  role;
+    std::string     hostname;
+    channel_role    role;
 
-    string to_string() const;
+    std::string to_string() const;
 
 } channel_info_t;
 
-// A channel is a pair of sockets such that each peer plays both client and
-// server towards the other peer. Taking this approach allows us to disregard
-// the order of writes (i.e., if P_i first sends the receives, we do not need to
-// enforce that P_j first receives and then sends).
 class Channel {
 public:
 
-    // Information about server part of this connection.
-    //
-    // @return channel_info_t object with server information.
-    const channel_info_t& ServerInfo() const;
+    Channel(const channel_info_t info)
+	: _info{info},
+	  _remote_id{info.remote_id},
+	  _local_id{info.local_id},
+	  _alive{false}
+	{};
 
-    // Information about client part of this connection.
-    //
-    // @return channel_info_t object with client information.
-    const channel_info_t& ClientInfo() const;
+    const channel_info_t& info() const {
+	return _info;
+    };
 
-    // Remote identifier.
-    //
-    // Equivalent to ClientInfo().id
-    //
-    // @return identifier of remote peer
-    partyid_t GetRemoteId() const;
+    partyid_t remote_id() const {
+	return _info.remote_id;
+    };
 
-    // Local identifier.
-    //
-    // Identifier of this peer. Equivalent to ServerInfo().id;
-    //
-    // @return identifier of local peer
-    partyid_t GetLocalId() const;
-
-    // Constructs a channel given server and client info.
-    Channel(const channel_info_t server_info, const channel_info_t client_info)
-	: server_info{server_info}, client_info{client_info},
-	  remote_id{client_info.id}, local_id{server_info.id},
-	  alive{false} {};
+    partyid_t local_id() const {
+	return _info.local_id;
+    };
 
     virtual ~Channel() {};
 
-    // Connect to remote peer.
-    //
-    // Before a Channel can be used it must be connected by calling this
-    // method. Calling Connect() multiple times have no effect.
-    //
-    // @throw may throw a runtime_error in case of configuration errors
-    virtual void Connect() = 0;
+    virtual void connect() = 0;
+    virtual void close() = 0;
+    virtual void send(const std::vector<unsigned char> &buf) = 0;
+    virtual void recv(std::vector<unsigned char> &buf) = 0;
 
-    // Closes connections.
-    virtual void Close() = 0;
+    void exchange(const std::vector<unsigned char> &sbuf, std::vector<unsigned char> &rbuf) {
+	this->send(sbuf);
+	this->recv(rbuf);
+    };
 
-    // Send content of buf to remote peer.
-    virtual void Send(const vector<u8> &buf) = 0;
-
-    // Receive into buf from remote peer.
-    virtual void Recv(vector<u8> &buf) = 0;
-
-    // Exchange data with remote peer.
-    //
-    // Equivalent to calling Send then Recv.
-    void Exchange(const vector<u8> &sbuf, vector<u8> &rbuf);
-
-    // Indicates whether the channel is alive or not.
-    //
-    // @return alive
-    bool IsAlive() const;
+    bool is_alive() const {
+	return _alive;
+    };
 
 protected:
 
-    channel_info_t server_info;
-    channel_info_t client_info;
+    channel_info_t _info;
 
-    partyid_t remote_id;
-    partyid_t local_id;
+    partyid_t _remote_id;
+    partyid_t _local_id;
 
-    bool alive;
+    bool _alive;
 };
 
 class DummyChannel : public Channel {
 public:
 
-    static channel_info_t DummyInfo(const partyid_t id);
+    static channel_info_t generate_info(const partyid_t id);
 
     DummyChannel(partyid_t id)
-	: Channel{DummyChannel::DummyInfo(id), DummyChannel::DummyInfo(id)} {};
+	: Channel{DummyChannel::generate_info(id)}
+	{};
+
 
     ~DummyChannel() {};
 
-    void Connect();
-    void Close();
-    void Send(const vector<u8> &buf);
-    void Recv(vector<u8> &buf);
+    void connect() {
+	this->_alive = true;
+    };
 
-    using Channel::Exchange;
+    void close() {
+	this->_alive = false;
+    };
+
+    void send(const std::vector<unsigned char> &buf) {
+	_buffer = buf;
+    };
+
+    void recv(std::vector<unsigned char> &buf) {
+	buf = _buffer;
+	_buffer.clear();
+    };
+
+    using Channel::exchange;
 
 private:
-    vector<u8> buffer;
+    std::vector<unsigned char> _buffer;
 };
 
-class AsioChannel : public Channel {
+class TCPChannel : public Channel {
 public:
 
     using Channel::Channel;
 
-    ~AsioChannel() {};
+    ~TCPChannel() {};
 
-    void Connect();
-    void Close() {};
+    void connect();
+    void close();
 
-    void Send(const vector<u8> &buf);
-    void Recv(vector<u8> &buf);
+    void send(const std::vector<unsigned char> &buf);
+    void recv(std::vector<unsigned char> &buf);
 
-    using Channel::Exchange;
+    using Channel::exchange;
 
 private:
 
-    void ConnectClient();
-    void ConnectServer();
+    void connect_as_server();
+    void connect_as_client();
 
-    boost::asio::io_service ios_sender;
-    boost::asio::io_service ios_receiver;
-    tcp::socket *ssock;
-    tcp::socket *rsock;
+    std::mutex _lock;
+    int _sock;
 };
 
 typedef struct {
-    partyid_t id;
-    size_t n;
-    vector<string> addrs;
+
+    partyid_t      id;
+    size_t         size;
+    std::vector<std::string> addrs;
+
+    std::string to_string() const;
+
 } network_info_t;
 
 enum exchange_order {
@@ -229,43 +190,84 @@ enum exchange_order {
 class Network {
 public:
 
-    Network(const network_info_t &info) : info{info} {};
-    Network(const partyid_t id, const string network_info_filename);
+    Network(const network_info_t &info)
+	: _info{info}
+	{};
 
-    void Connect();
-    void Close();
+    Network(const partyid_t id, const std::string network_info_filename);
 
-    Channel* operator[](const size_t idx) const;
+    void connect();
+    void close();
 
-    void SetBasePort(const int port);
+    Channel* operator[](const size_t idx) const {
+	assert (idx < this->size());
+	return _peers[idx];
+    };
 
-    int GetBasePort() const;
-    size_t Size() const;
-    partyid_t GetId() const;
-    network_info_t GetInfo() const;
+    int& base_port() {
+	return _base_port;
+    };
 
-    void ExchangeAll(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const;
-    void BroadcastSend(const vector<u8> &buf) const;
-    void BroadcastRecv(const partyid_t broadcaster, vector<u8> &buf) const;
-    void ExchangeRing(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order = DECREASING) const;
+    size_t size() const {
+	return _info.size;
+    };
 
-    inline void SendToNext(const vector<u8> &buf) const;
-    inline void RecvFromNext(vector<u8> &buf) const;
-    inline void SendToPrev(const vector<u8> &buf) const;
-    inline void RecvFromPrev(vector <u8> &buf) const;
+    partyid_t id() const {
+	return _info.id;
+    };
 
-    Channel* NextPeer() const;
-    Channel* PrevPeer() const;
+    network_info_t info() const {
+	return _info;
+    };
+
+    void exchange_all(
+	const std::vector<std::vector<unsigned char>> &sbufs,
+	std::vector<std::vector<unsigned char>> &rbufs) const;
+
+    void broadcast_send(
+	const std::vector<unsigned char> &buf) const;
+
+    void broadcast_recv(
+	const partyid_t broadcaster,
+	std::vector<unsigned char> &buf) const;
+
+    void exchange_ring(
+	const std::vector<unsigned char> &sbuf,
+	std::vector<unsigned char> &rbuf,
+	exchange_order order = DECREASING) const;
+
+    inline void send_to_next(const std::vector<unsigned char> &buf) const {
+	next_peer()->send(buf);
+    };
+
+    inline void recv_from_next(std::vector<unsigned char> &buf) const {
+	next_peer()->recv(buf);
+    };
+
+    inline void send_to_prev(const std::vector<unsigned char> &buf) const {
+	prev_peer()->send(buf);
+    };
+
+    inline void recv_from_prev(std::vector <unsigned char> &buf) const {
+	prev_peer()->recv(buf);
+    };
+
+    Channel* next_peer() const {
+	return id() == size() - 1 ? _peers[0] : _peers[id() + 1];
+    };
+
+    Channel* prev_peer() const {
+	return id() == 0 ? _peers[size() - 1] : _peers[id() - 1];
+    };
 
 private:
 
-    network_info_t info;
-    vector<Channel *> peers;
+    network_info_t _info;
+    std::vector<Channel*> _peers;
 
-    channel_info_t MakeClientInfo(const partyid_t id, const string hostname) const;
-    channel_info_t MakeServerInfo(const partyid_t id) const;
+    channel_info_t make_info(const partyid_t id, const std::string hostname) const;
 
-    int base_port = 5000;
+    int _base_port = 5000;
 };
 
 } // ncomm

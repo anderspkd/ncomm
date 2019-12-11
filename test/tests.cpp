@@ -6,17 +6,17 @@ using namespace ncomm;
 TEST_CASE("DummyChannel init") {
     DummyChannel chl {42};
 
-    REQUIRE(chl.GetRemoteId() == 42);
-    REQUIRE(chl.GetLocalId() == 42);
-    REQUIRE(chl.IsAlive() == false);
+    REQUIRE(chl.remote_id() == 42);
+    REQUIRE(chl.local_id() == 42);
+    REQUIRE(chl.is_alive() == false);
 
-    chl.Connect();
+    chl.connect();
 
-    REQUIRE(chl.IsAlive() == true);
+    REQUIRE(chl.is_alive() == true);
 
-    chl.Close();
+    chl.close();
 
-    REQUIRE(chl.IsAlive() == false);
+    REQUIRE(chl.is_alive() == false);
 }
 
 TEST_CASE("DummyChannel communicate") {
@@ -25,17 +25,17 @@ TEST_CASE("DummyChannel communicate") {
     vector<u8> sbuf {1,2,3};
     vector<u8> rbuf (sbuf.size());
 
-    chl.Connect();
+    chl.connect();
 
-    chl.Send(sbuf);
-    chl.Recv(rbuf);
+    chl.send(sbuf);
+    chl.recv(rbuf);
 
     for (size_t i = 0; i < rbuf.size(); i++)
 	REQUIRE(rbuf[i] == sbuf[i]);
 
     rbuf.clear();
 
-    chl.Exchange(sbuf, rbuf);
+    chl.exchange(sbuf, rbuf);
 
     for (size_t i = 0; i < rbuf.size(); i++)
 	REQUIRE(rbuf[i] == sbuf[i]);

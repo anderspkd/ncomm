@@ -1,132 +1,164 @@
 #include "../include/ncomm.hpp"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <netinet/tcp.h>
+#include <future>
+
 namespace ncomm {
 
-string channel_info_t::to_string() const {
+using std::vector;
+using std::string;
+
+typedef unsigned char u8;
+
+string channel_info_t::to_string() const
+{
     std::stringstream ss;
-    ss << "<id=" << id << ", " <<
-	"addr=\"" << hostname << "\", " <<
-	"port=" << port << ", " <<
-	"role=" << role << ">";
+    if (role == channel_role::DUMMY) {
+	ss << "<dummy (id=" << local_id << ")>";
+    } else {
+	ss << "<";
+	if (role == channel_role::SERVER)
+	    ss << "server ";
+	else
+	    ss << "client ";
+	ss << "(id=" << local_id << ", remote=" << remote_id << ")";
+	ss << ", port=" << port << ", hostname=" << hostname << ">";
+    }
     return ss.str();
 }
 
-const channel_info_t& Channel::ServerInfo() const {
-    return server_info;
-}
-
-const channel_info_t& Channel::ClientInfo() const {
-    return client_info;
-}
-
-partyid_t Channel::GetRemoteId() const {
-    return remote_id;
-}
-
-partyid_t Channel::GetLocalId() const {
-    return local_id;
-}
-
-bool Channel::IsAlive() const {
-    return this->alive;
-}
-
-void Channel::Exchange(const vector<u8> &sbuf, vector<u8> &rbuf) {
-    this->Send(sbuf);
-    this->Recv(rbuf);
-}
-
-channel_info_t DummyChannel::DummyInfo(const partyid_t id) {
+channel_info_t DummyChannel::generate_info(const partyid_t id)
+{
     channel_info_t info = {
-	.id = id,
+	.local_id = id,
+	.remote_id = id,
 	.port = -1,
 	.hostname = "",
 	.role = DUMMY
     };
+
     return info;
 }
 
-void DummyChannel::Connect() {
-    this->alive = true;
-}
+void TCPChannel::connect_as_server()
+{
+    int opt = 1;
+    int ssock = socket(AF_INET, SOCK_STREAM, 0);
+    if (!ssock)
+	throw std::runtime_error("(server) socket");
 
-void DummyChannel::Close() {
-    this->alive = false;
-}
-
-void DummyChannel::Send(const vector<u8> &buf) {
-    buffer = buf;
-}
-
-void DummyChannel::Recv(vector<u8> &buf) {
-    buf = buffer;
-    buffer.clear();
-}
-
-void AsioChannel::ConnectClient() {
-
-    auto info = ClientInfo();
-    NCOMM_L("client: %s", info.to_string().c_str());
-
-    const auto addr = boost::asio::ip::address::from_string(info.hostname);
-    tcp::endpoint ep(addr, info.port);
-    ssock = new tcp::socket(ios_sender);
-    boost::system::error_code err = boost::asio::error::host_not_found;
-    while (err) {
-	ssock->close();
-	ssock->connect(ep, err);
+    if (setsockopt(ssock,
+		   SOL_SOCKET,
+		   SO_REUSEADDR | SO_REUSEPORT | TCP_NODELAY,
+		   &opt, sizeof(opt)))
+    {
+	throw std::runtime_error("(server) setsockopt");
     }
-    boost::asio::ip::tcp::no_delay no_delay(true);
-    ssock->set_option(no_delay);
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(info().port);
+
+    if (bind(ssock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	throw std::runtime_error("(server) bind");
+
+    if (listen(ssock, 1) < 0)
+	throw std::runtime_error("(server) listen");
+
+    auto addrlen = sizeof(addr);
+    _sock = accept(ssock, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
+
+    if (_sock < 0)
+	throw std::runtime_error("(server) accept");
+
+    NCOMM_L("server connected");
+    _alive = true;
 }
 
-void AsioChannel::ConnectServer() {
+void TCPChannel::connect_as_client()
+{
+    _sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (_sock < 0)
+	throw std::runtime_error("(client) socket");
 
-    auto info = ServerInfo();
-    NCOMM_L("server: %s", info.to_string().c_str());
+    int opt = 1;
+    if (setsockopt(_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)))
+    	throw std::runtime_error("(client) setsockopt");
 
-    tcp::acceptor acceptor(ios_receiver, tcp::endpoint(tcp::v4(), info.port));
-    rsock = new tcp::socket(ios_receiver);
-    acceptor.accept(*rsock);
-    boost::asio::ip::tcp::no_delay no_delay(true);
-    rsock->set_option(no_delay);
-}
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(info().port);
 
-void AsioChannel::Connect() {
+    if (inet_pton(AF_INET, info().hostname.c_str(), &addr.sin_addr) <= 0)
+	throw std::runtime_error("(client) inet_pton");
 
-    if (alive)
-	return;
-
-    // validate connection information
-    auto sinfo = ServerInfo();
-    auto cinfo = ClientInfo();
-
-    if (sinfo.role == cinfo.role)
-	throw std::runtime_error("remote and local with same role");
-
-    if (sinfo.id == cinfo.id)
-	throw std::runtime_error("use DummyChannel when connecting to self");
-
-    if (sinfo.id < cinfo.id) {
-	ConnectServer();
-	ConnectClient();
-    } else {
-	ConnectClient();
-	ConnectServer();
+    int attempts = 0;
+    while (!is_alive()) {
+	if (::connect(_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	    attempts += 1;
+	    sleep(1);
+	} else {
+	    _alive = true;
+	    break;
+	}
     }
+    NCOMM_L("connect in %d attempts", attempts);
 }
 
-void AsioChannel::Send(const vector<u8> &buf) {
-    boost::system::error_code err;
-    boost::asio::write(*ssock,
-		       boost::asio::buffer(buf),
-		       boost::asio::transfer_all(),
-		       err);
-    (void)err;
+void TCPChannel::connect()
+{
+    switch (info().role) {
+    case channel_role::SERVER:
+	connect_as_server();
+	break;
+    case channel_role::CLIENT:
+	connect_as_client();
+	break;
+    default:
+	throw std::runtime_error("TCPChannel with dummy role");
+    }
+
+    NCOMM_L("conneted: %s", info().to_string().c_str());
+
+    assert(is_alive());
 }
 
-void AsioChannel::Recv(vector<u8> &buf) {
-    boost::asio::read(*rsock, boost::asio::buffer(buf, buf.size()));
+void TCPChannel::close()
+{
+    _alive = false;
+}
+
+void TCPChannel::send(const vector<u8> &buf)
+{
+    // fire and forget type writing.
+
+    auto h = [this, &buf]() {
+	::write(_sock, buf.data(), buf.size());
+    };
+
+    std::thread(h).detach();
+}
+
+void TCPChannel::recv(vector<u8> &buf)
+{
+    size_t rem = buf.size();
+    size_t offset = 0;
+
+    while (rem > 0) {
+    	auto n = ::read(_sock, buf.data() + offset, 1024);
+
+    	if (n < 0) {
+    	    continue;
+    	}
+
+    	offset += n;
+    	rem -= n;
+    }
 }
 
 } // ncomm
