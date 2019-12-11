@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
-#include <future>
+#include <thread>
 
 namespace ncomm {
 

@@ -22,14 +22,10 @@
 #ifndef _NCOMM_HPP
 #define _NCOMM_HPP
 
-#include <cstdint>
 #include <cassert>
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <atomic>
-#include <thread>
-#include <mutex>
 
 #ifdef NCOMM_PRINT
 #define NCOMM_L(...) do {						\
@@ -122,7 +118,6 @@ public:
 	: Channel{DummyChannel::generate_info(id)}
 	{};
 
-
     ~DummyChannel() {};
 
     void connect() {
@@ -168,14 +163,13 @@ private:
     void connect_as_server();
     void connect_as_client();
 
-    std::mutex _lock;
     int _sock;
 };
 
 typedef struct {
 
     partyid_t      id;
-    size_t         size;
+    std::size_t         size;
     std::vector<std::string> addrs;
 
     std::string to_string() const;
@@ -199,7 +193,7 @@ public:
     void connect();
     void close();
 
-    Channel* operator[](const size_t idx) const {
+    Channel* operator[](const std::size_t idx) const {
 	assert (idx < this->size());
 	return _peers[idx];
     };
@@ -208,7 +202,7 @@ public:
 	return _base_port;
     };
 
-    size_t size() const {
+    std::size_t size() const {
 	return _info.size;
     };
 
