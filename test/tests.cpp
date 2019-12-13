@@ -2,6 +2,8 @@
 #include "../include/ncomm.hpp"
 
 using namespace ncomm;
+using namespace std;
+typedef unsigned char u8;
 
 TEST_CASE("DummyChannel init") {
     DummyChannel chl {42};

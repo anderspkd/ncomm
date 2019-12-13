@@ -1,6 +1,5 @@
 CXX      = g++
-CXXFLAGS = -Wall -Wextra -Werror -march=native -fpie -std=c++17 -g -O2
-# LDFLAGS  = -lboost_system -lpthread
+CXXFLAGS = -Wall -Wextra -Werror -march=native -fpie -std=c++17 -g -O2 -Os
 LDFLAGS  = -lpthread
 
 LIB_NAME = libncomm.a

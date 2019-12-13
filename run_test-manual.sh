@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n=2
+n=5
 
 for i in $(seq 0 $((n-2))); do
     echo "started party $i"

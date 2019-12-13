@@ -1,4 +1,4 @@
-/ncomm.a
+libncomm.a
 source/*.o
 test/*
 run_test
