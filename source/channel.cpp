@@ -135,19 +135,7 @@ void TCPChannel::close()
 
 void TCPChannel::send(const vector<u8> &buf)
 {
-    // fire and forget type writing.
-
-    while (sending)
-	;
-
-    sending = true;
-
-    auto h = [this, &buf]() {
-	::write(_sock, buf.data(), buf.size());
-	sending = false;
-    };
-
-    std::thread(h).detach();
+    ::write(_sock, buf.data(), buf.size());
 }
 
 void TCPChannel::recv(vector<u8> &buf)

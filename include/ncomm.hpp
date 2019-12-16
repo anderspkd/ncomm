@@ -26,7 +26,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <atomic>
 
 #ifdef NCOMM_PRINT
 #define NCOMM_L(...) do {						\
@@ -92,8 +91,13 @@ public:
     virtual void recv(std::vector<unsigned char> &buf) = 0;
 
     void exchange(const std::vector<unsigned char> &sbuf, std::vector<unsigned char> &rbuf) {
-	this->send(sbuf);
-	this->recv(rbuf);
+	if (_local_id > _remote_id) {
+	    this->send(sbuf);
+	    this->recv(rbuf);
+	} else {
+	    this->recv(rbuf);
+	    this->send(sbuf);
+	}
     };
 
     bool is_alive() const {
@@ -108,8 +112,6 @@ protected:
     partyid_t _local_id;
 
     bool _alive;
-
-    std::atomic<bool> sending = false;
 };
 
 class DummyChannel : public Channel {

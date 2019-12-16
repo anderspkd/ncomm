@@ -117,12 +117,26 @@ void Network::broadcast_recv(const partyid_t broadcaster, vector<u8> &buf) const
 void Network::exchange_ring(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) const
 {
     NCOMM_L("exchange_ring()");
+
+    auto np = next_peer();
+    auto pp = prev_peer();
+
     if (order == exchange_order::INCREASING) {
-	next_peer()->send(sbuf);
-	prev_peer()->recv(rbuf);
+	if (id() == 0) {
+	    np->send(sbuf);
+	    pp->recv(rbuf);
+	} else {
+	    pp->recv(rbuf);
+	    np->send(sbuf);
+	}
     } else { // order == exchange_order::DECREASING
-	prev_peer()->send(sbuf);
-	next_peer()->recv(rbuf);
+	if (id() == 0) {
+	    pp->send(sbuf);
+	    np->recv(rbuf);
+	} else {
+	    np->recv(rbuf);
+	    pp->send(sbuf);
+	}
     }
 }
 
