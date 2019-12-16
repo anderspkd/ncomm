@@ -26,6 +26,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <atomic>
 
 #ifdef NCOMM_PRINT
 #define NCOMM_L(...) do {						\
@@ -107,6 +108,8 @@ protected:
     partyid_t _local_id;
 
     bool _alive;
+
+    std::atomic<bool> sending = false;
 };
 
 class DummyChannel : public Channel {
