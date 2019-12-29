@@ -28,13 +28,13 @@
 #include <sstream>
 
 #ifdef NCOMM_PRINT
-#define NCOMM_L(...) do {						\
+#define NCOMM_DEBUG(...) do {						\
 	fprintf(stderr, "[%s:%d] ", __FILE__, __LINE__);		\
 	fprintf(stderr, ##__VA_ARGS__);					\
 	fputs("\n", stderr);						\
     } while(0)
 #else
-#define NCOMM_L(...) do { } while(0)
+#define NCOMM_DEBUG(...) do { } while(0)
 #endif
 
 #define NCOMM_LOCALHOST_IP "0.0.0.0"

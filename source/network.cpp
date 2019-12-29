@@ -74,7 +74,7 @@ channel_info_t Network::make_info(const partyid_t remote_id, const string hostna
 
 void Network::connect()
 {
-    NCOMM_L("%s connect()", info().to_string().c_str());
+    NCOMM_DEBUG("%s connect()", info().to_string().c_str());
 
     _peers.resize(size());
 

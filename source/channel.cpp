@@ -76,7 +76,7 @@ void TCPChannel::connect_as_server()
     if (_sock < 0)
 	throw std::runtime_error("(server) accept");
 
-    NCOMM_L("server connected");
+    NCOMM_DEBUG("server connected");
     _alive = true;
 }
 
@@ -107,7 +107,7 @@ void TCPChannel::connect_as_client()
 	    break;
 	}
     }
-    NCOMM_L("connect in %d attempts", attempts);
+    NCOMM_DEBUG("connect in %d attempts", attempts);
 }
 
 void TCPChannel::connect()
@@ -123,7 +123,7 @@ void TCPChannel::connect()
 	throw std::runtime_error("TCPChannel with dummy role");
     }
 
-    NCOMM_L("conneted: %s", info().to_string().c_str());
+    NCOMM_DEBUG("conneted: %s", info().to_string().c_str());
 
     assert(is_alive());
 }
