@@ -90,14 +90,8 @@ public:
     virtual void send(const std::vector<unsigned char> &buf) = 0;
     virtual void recv(std::vector<unsigned char> &buf) = 0;
 
-    void exchange(const std::vector<unsigned char> &sbuf, std::vector<unsigned char> &rbuf) {
-	if (_local_id > _remote_id) {
-	    this->send(sbuf);
-	    this->recv(rbuf);
-	} else {
-	    this->recv(rbuf);
-	    this->send(sbuf);
-	}
+    std::string to_string() const {
+	return info().to_string();
     };
 
     bool is_alive() const {
@@ -133,16 +127,8 @@ public:
 	this->_alive = false;
     };
 
-    void send(const std::vector<unsigned char> &buf) {
-	_buffer = buf;
-    };
-
-    void recv(std::vector<unsigned char> &buf) {
-	buf = _buffer;
-	_buffer.clear();
-    };
-
-    using Channel::exchange;
+    void send(const std::vector<unsigned char> &buf);
+    void recv(std::vector<unsigned char> &buf);
 
 private:
     std::vector<unsigned char> _buffer;
@@ -160,8 +146,6 @@ public:
 
     void send(const std::vector<unsigned char> &buf);
     void recv(std::vector<unsigned char> &buf);
-
-    using Channel::exchange;
 
 private:
 
@@ -198,11 +182,6 @@ public:
     void connect();
     void close();
 
-    Channel* operator[](const std::size_t idx) const {
-	assert (idx < this->size());
-	return _peers[idx];
-    };
-
     int& base_port() {
 	return _base_port;
     };
@@ -218,6 +197,14 @@ public:
     network_info_t info() const {
 	return _info;
     };
+
+    void send_to(
+	const partyid_t receiver,
+	const std::vector<unsigned char> &buf) const;
+
+    void recv_from(
+	const partyid_t sender,
+	std::vector<unsigned char> &buf) const;
 
     void exchange_all(
 	const std::vector<std::vector<unsigned char>> &sbufs,
@@ -235,28 +222,12 @@ public:
 	std::vector<unsigned char> &rbuf,
 	exchange_order order = DECREASING) const;
 
-    inline void send_to_next(const std::vector<unsigned char> &buf) const {
-	next_peer()->send(buf);
+    partyid_t ident_of_next() const {
+	return id() == size() - 1 ? 0 : id() + 1;
     };
 
-    inline void recv_from_next(std::vector<unsigned char> &buf) const {
-	next_peer()->recv(buf);
-    };
-
-    inline void send_to_prev(const std::vector<unsigned char> &buf) const {
-	prev_peer()->send(buf);
-    };
-
-    inline void recv_from_prev(std::vector <unsigned char> &buf) const {
-	prev_peer()->recv(buf);
-    };
-
-    Channel* next_peer() const {
-	return id() == size() - 1 ? _peers[0] : _peers[id() + 1];
-    };
-
-    Channel* prev_peer() const {
-	return id() == 0 ? _peers[size() - 1] : _peers[id() - 1];
+    partyid_t ident_of_prev() const {
+	return id() == 0 ? size() - 1 : id() - 1;
     };
 
 private:

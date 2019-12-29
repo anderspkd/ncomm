@@ -44,6 +44,15 @@ channel_info_t DummyChannel::generate_info(const partyid_t id)
     return info;
 }
 
+void DummyChannel::send(const vector<unsigned char> &buf) {
+    _buffer = buf;
+};
+
+void DummyChannel::recv(vector<unsigned char> &buf) {
+    NCOMM_DEBUG("recv %s", to_string().c_str());
+    buf = _buffer;
+};
+
 void TCPChannel::connect_as_server()
 {
     int opt = 1;
@@ -135,16 +144,31 @@ void TCPChannel::close()
 
 void TCPChannel::send(const vector<u8> &buf)
 {
-    ::write(_sock, buf.data(), buf.size());
-}
-
-void TCPChannel::recv(vector<u8> &buf)
-{
     size_t rem = buf.size();
     size_t offset = 0;
 
     while (rem > 0) {
-    	auto n = ::read(_sock, buf.data() + offset, 1024);
+	ssize_t n = ::write(_sock, buf.data() + offset, rem);
+
+	if (n < 0)
+	    continue;
+
+	rem -= n;
+	offset += n;
+    }
+
+    assert (rem == 0);
+}
+
+void TCPChannel::recv(vector<u8> &buf)
+{
+    NCOMM_DEBUG("recv %s #bytes=%ld", to_string().c_str(), buf.size());
+
+    size_t rem = buf.size();
+    size_t offset = 0;
+
+    while (rem > 0) {
+    	ssize_t n = ::read(_sock, buf.data() + offset, rem);
 
     	if (n < 0) {
     	    continue;
@@ -153,6 +177,8 @@ void TCPChannel::recv(vector<u8> &buf)
     	offset += n;
     	rem -= n;
     }
+
+    assert (rem == 0);
 }
 
 } // ncomm

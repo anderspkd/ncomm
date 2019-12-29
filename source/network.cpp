@@ -1,5 +1,7 @@
 #include "../include/ncomm.hpp"
 
+#include <thread>
+
 namespace ncomm {
 
 using std::string;
@@ -91,53 +93,73 @@ void Network::connect()
     }
 }
 
+void Network::send_to(const partyid_t receiver, const vector<unsigned char> &buf) const
+{
+    assert (receiver < size());
+    _peers[receiver]->send(buf);
+}
+
+void Network::recv_from(const partyid_t sender, vector<unsigned char> &buf) const
+{
+    assert (sender < size());
+    _peers[sender]->recv(buf);
+}
+
 void Network::exchange_all(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const
 {
-    NCOMM_L("exchange_all()");
-    for (auto &peer : _peers) {
-	const auto rid = peer->remote_id();
-	peer->exchange(sbufs[rid], rbufs[rid]);
-    }
+    NCOMM_DEBUG("exchange_all()");
+
+    auto handler = [&](){
+	for (size_t i = 0; i < size(); i++) {
+	    if (i == this->id())
+		continue;
+	    this->send_to((partyid_t)i, sbufs[i]);
+	}
+    };
+
+    // we need to ensure that we "send" to ourselves before read is called.
+    send_to(this->id(), sbufs[this->id()]);
+
+    std::thread sender (handler);
+
+    for (size_t i = 0; i < size(); i++)
+	recv_from((partyid_t)i, rbufs[i]);
+
+    sender.join();
 }
 
 void Network::broadcast_send(const vector<u8> &buf) const
 {
-    NCOMM_L("broadcast_send()");
+    NCOMM_DEBUG("broadcast_send()");
     for (auto &peer : _peers)
 	peer->send(buf);
 }
 
 void Network::broadcast_recv(const partyid_t broadcaster, vector<u8> &buf) const
 {
-    NCOMM_L("broadcast_recv()");
+    NCOMM_DEBUG("broadcast_recv()");
     assert (broadcaster < size());
     _peers[broadcaster]->recv(buf);
 }
 
 void Network::exchange_ring(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) const
 {
-    NCOMM_L("exchange_ring()");
+    // TODO: handler size() == 1 case?
+    NCOMM_DEBUG("exchange_ring()");
 
-    auto np = next_peer();
-    auto pp = prev_peer();
+    const auto increasing_p = order == exchange_order::INCREASING;
+    const auto send_id = (increasing_p ? ident_of_next() : ident_of_prev());
+    const auto recv_id = (increasing_p ? ident_of_prev() : ident_of_next());
 
-    if (order == exchange_order::INCREASING) {
-	if (id() == 0) {
-	    np->send(sbuf);
-	    pp->recv(rbuf);
-	} else {
-	    pp->recv(rbuf);
-	    np->send(sbuf);
-	}
-    } else { // order == exchange_order::DECREASING
-	if (id() == 0) {
-	    pp->send(sbuf);
-	    np->recv(rbuf);
-	} else {
-	    np->recv(rbuf);
-	    pp->send(sbuf);
-	}
-    }
+    auto handler = [&]() {
+	this->send_to(send_id, sbuf);
+    };
+
+    std::thread sender (handler);
+
+    this->recv_from(recv_id, rbuf);
+
+    sender.join();
 }
 
 } // ncomm
