@@ -144,12 +144,16 @@ void Network::broadcast_recv(const partyid_t broadcaster, vector<u8> &buf) const
 
 void Network::exchange_ring(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_order order) const
 {
-    // TODO: handler size() == 1 case?
     NCOMM_DEBUG("exchange_ring()");
 
-    const auto increasing_p = order == exchange_order::INCREASING;
-    const auto send_id = (increasing_p ? ident_of_next() : ident_of_prev());
-    const auto recv_id = (increasing_p ? ident_of_prev() : ident_of_next());
+    partyid_t send_id, recv_id;
+    if (order == exchange_order::INCREASING) {
+	send_id = ident_of_next();
+	recv_id = ident_of_prev();
+    } else {
+	send_id = ident_of_prev();
+	recv_id = ident_of_next();
+    }
 
     auto handler = [&]() {
 	this->send_to(send_id, sbuf);

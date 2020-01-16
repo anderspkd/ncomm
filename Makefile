@@ -17,8 +17,9 @@ default: $(OBJS)
 	ar rcs $(LIB_NAME) $(OBJS)
 
 test: default test/test-main.o
-	$(CXX) $(CXXFLAGS) test/test-main.o test/tests.cpp -o run_test $(LDFLAGS) $(LIB_NAME)
-	@./run_test
+	$(CXX) $(CXXFLAGS) test/test-main.o test/tests.cpp -o run_test $(LDFLAGS) $(LIB_NAME) -DNCOMM_TEST
+	@echo "running tests ..."
+	./run_test
 
 test-manual: default
 	$(CXX) $(CXXFLAGS) test/test-manual.cpp -o test-manual $(LDFLAGS) $(LIB_NAME)

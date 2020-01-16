@@ -230,6 +230,18 @@ public:
 	return id() == 0 ? size() - 1 : id() - 1;
     };
 
+#ifdef NCOMM_TEST
+
+    Network(const partyid_t id, const size_t networksize, const int newport) {
+	_info = {
+	    .id = id,
+	    .size = networksize,
+	    .addrs = std::vector<std::string>(networksize, "127.0.0.1")
+	};
+	this->base_port() = newport;
+    };
+#endif
+
 private:
 
     network_info_t _info;
