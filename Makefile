@@ -21,8 +21,11 @@ test: default test/test-main.o
 	@echo "running tests ..."
 	./run_test
 
-test-manual: default
-	$(CXX) $(CXXFLAGS) test/test-manual.cpp -o test-manual $(LDFLAGS) $(LIB_NAME)
+pre-example:
+	$(eval CXXFLAGS += -DNCOMM_PRINT)
+
+example: pre-example default
+	$(CXX) $(CXXFLAGS) example.cpp -o example $(LDFLAGS) $(LIB_NAME)
 
 clean:
 	find source/ -iname "*.o" -delete
@@ -34,4 +37,4 @@ clean:
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -c -o $@ $< $(LDFLAGS)
 
-.PHONY: default clean test test-manual
+.PHONY: default clean test pre-example example
