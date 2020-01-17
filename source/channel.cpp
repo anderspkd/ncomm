@@ -147,6 +147,7 @@ void TCPChannel::send(const vector<u8> &buf)
     size_t rem = buf.size();
     size_t offset = 0;
 
+    // TODO: Error checking. Avoid looping forever if other end is dead.
     while (rem > 0) {
 	ssize_t n = ::write(_sock, buf.data() + offset, rem);
 
@@ -167,6 +168,7 @@ void TCPChannel::recv(vector<u8> &buf)
     size_t rem = buf.size();
     size_t offset = 0;
 
+    // TODO: Error checking. Avoid looping forever if other end is dead.
     while (rem > 0) {
     	ssize_t n = ::read(_sock, buf.data() + offset, rem);
 
