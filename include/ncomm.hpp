@@ -27,6 +27,7 @@
 #include <fstream>
 #include <sstream>
 
+// TODO: Not thread safe.
 #ifdef NCOMM_PRINT
 #define NCOMM_DEBUG(...) do {						\
 	fprintf(stderr, "[%s:%d] ", __FILE__, __LINE__);		\
