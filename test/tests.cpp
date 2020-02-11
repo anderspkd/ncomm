@@ -8,6 +8,18 @@ using namespace ncomm;
 using namespace std;
 typedef unsigned char u8;
 
+TEST_CASE("network init from file") {
+    bool good = false;
+
+    try {
+    	Network nw (-1, "test/test_network_info.txt");
+    } catch (...) {
+    	good = true;
+    }
+
+    REQUIRE(good);
+}
+
 TEST_CASE("DummyChannel init") {
     DummyChannel chl {42};
 

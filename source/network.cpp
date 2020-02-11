@@ -34,6 +34,9 @@ Network::Network(const partyid_t id, const string network_info_filename)
 
     network_info.close();
 
+    if (id >= n)
+	throw std::runtime_error("invalid party id");
+
     _info = {
 	.id    = id,
 	.size  = n,
