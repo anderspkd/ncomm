@@ -108,6 +108,26 @@ void Network::recv_from(const partyid_t sender, vector<u8> &buf) const
     _peers[sender]->recv(buf);
 }
 
+void Network::exchange_with(const partyid_t other, const vector<u8> &sbuf, vector<u8> rbuf) const
+{
+    if (other == id()) {
+	// less efficient than need be, but more consistent behaviorwise
+	send_to(id(), sbuf);
+	recv_from(id(), rbuf);
+	return;
+    }
+
+    auto one_shot = [&]() {
+	this->send_to((partyid_t)other, sbuf);
+    };
+
+    std::thread sender (one_shot);
+
+    recv_from(other, rbuf);
+
+    sender.join();
+}
+
 void Network::exchange_all(const vector<vector<u8>> &sbufs, vector<vector<u8>> &rbufs) const
 {
     NCOMM_DEBUG("exchange_all()");

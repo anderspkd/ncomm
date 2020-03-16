@@ -207,6 +207,11 @@ public:
 	const partyid_t sender,
 	std::vector<unsigned char> &buf) const;
 
+    void exchange_with(
+	const partyid_t other,
+	const std::vector<unsinged char> &sbuf,
+	std::vector<unsigned char> &rbuf) const;
+
     void exchange_all(
 	const std::vector<std::vector<unsigned char>> &sbufs,
 	std::vector<std::vector<unsigned char>> &rbufs) const;
