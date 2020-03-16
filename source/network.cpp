@@ -108,7 +108,7 @@ void Network::recv_from(const partyid_t sender, vector<u8> &buf) const
     _peers[sender]->recv(buf);
 }
 
-void Network::exchange_with(const partyid_t other, const vector<u8> &sbuf, vector<u8> rbuf) const
+void Network::exchange_with(const partyid_t other, const vector<u8> &sbuf, vector<u8> &rbuf) const
 {
     if (other == id()) {
 	// less efficient than need be, but more consistent behaviorwise
