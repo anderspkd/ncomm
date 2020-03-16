@@ -96,13 +96,13 @@ void Network::connect()
     }
 }
 
-void Network::send_to(const partyid_t receiver, const vector<unsigned char> &buf) const
+void Network::send_to(const partyid_t receiver, const vector<u8> &buf) const
 {
     assert (receiver < size());
     _peers[receiver]->send(buf);
 }
 
-void Network::recv_from(const partyid_t sender, vector<unsigned char> &buf) const
+void Network::recv_from(const partyid_t sender, vector<u8> &buf) const
 {
     assert (sender < size());
     _peers[sender]->recv(buf);
