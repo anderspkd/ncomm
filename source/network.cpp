@@ -178,15 +178,8 @@ void Network::exchange_ring(const vector<u8> &sbuf, vector<u8> &rbuf, exchange_o
 	recv_id = ident_of_next();
     }
 
-    auto handler = [&]() {
-	this->send_to(send_id, sbuf);
-    };
-
-    std::thread sender (handler);
-
+    this->send_to(send_id, sbuf);
     this->recv_from(recv_id, rbuf);
-
-    sender.join();
 }
 
 } // ncomm

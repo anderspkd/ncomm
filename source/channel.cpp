@@ -123,7 +123,7 @@ void TCPChannel::connect()
 {
     switch (info().role) {
     case channel_role::SERVER:
-	connect_as_server();
+ 	connect_as_server();
 	break;
     case channel_role::CLIENT:
 	connect_as_client();
@@ -132,9 +132,20 @@ void TCPChannel::connect()
 	throw std::runtime_error("TCPChannel with dummy role");
     }
 
-    NCOMM_DEBUG("conneted: %s", info().to_string().c_str());
-
     assert(is_alive());
+
+    auto sender = [&]() {
+	while (this->_alive) {
+	    auto v = this->send_queue.front();
+	    this->_send(v.data(), v.size());
+	    this->send_queue.pop_front();
+	}
+    };
+
+    std::thread s(sender);
+    s.detach();
+
+    NCOMM_DEBUG("conneted: %s", info().to_string().c_str());
 }
 
 void TCPChannel::close()
@@ -142,14 +153,19 @@ void TCPChannel::close()
     _alive = false;
 }
 
-void TCPChannel::send(const vector<u8> &buf)
+void TCPChannel::send(const vector<u8>& buf)
 {
-    size_t rem = buf.size();
+    send_queue.push_back(buf);
+}
+
+void TCPChannel::_send(const u8 *buf, const size_t length)
+{
+    size_t rem = length;
     size_t offset = 0;
 
     // TODO: Error checking. Avoid looping forever if other end is dead.
     while (rem > 0) {
-	ssize_t n = ::write(_sock, buf.data() + offset, rem);
+	ssize_t n = ::write(_sock, buf + offset, rem);
 
 	if (n < 0)
 	    continue;

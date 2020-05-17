@@ -24,8 +24,14 @@
 
 #include <cassert>
 #include <vector>
+#include <queue>
 #include <fstream>
 #include <sstream>
+
+// queue stuff
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 // TODO: Not thread safe.
 #ifdef NCOMM_PRINT
@@ -41,6 +47,85 @@
 #define NCOMM_LOCALHOST_IP "0.0.0.0"
 
 namespace ncomm {
+
+template <typename T>
+class SharedQueue
+{
+public:
+    SharedQueue();
+    ~SharedQueue();
+
+    void pop_front();
+    T& front();
+
+    void push_back(const T& item);
+    void push_back(T&& item);
+
+    int size();
+    bool empty();
+
+private:
+    std::deque<T> queue_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
+};
+
+template <typename T>
+SharedQueue<T>::SharedQueue(){}
+
+template <typename T>
+SharedQueue<T>::~SharedQueue(){}
+
+template <typename T>
+void SharedQueue<T>::pop_front()
+{
+    std::unique_lock<std::mutex> mlock(mutex_);
+    while (queue_.empty())
+    {
+	cond_.wait(mlock);
+    }
+    queue_.pop_front();
+}
+
+template <typename T>
+T& SharedQueue<T>::front()
+{
+    std::unique_lock<std::mutex> mlock(mutex_);
+    while (queue_.empty())
+    {
+	cond_.wait(mlock);
+    }
+    return queue_.front();
+}
+
+template <typename T>
+void SharedQueue<T>::push_back(const T& item)
+{
+    std::unique_lock<std::mutex> mlock(mutex_);
+    queue_.push_back(item);
+    mlock.unlock();     // unlock before notificiation to minimize mutex con
+    cond_.notify_one(); // notify one waiting thread
+
+}
+
+template <typename T>
+void SharedQueue<T>::push_back(T&& item)
+{
+    std::unique_lock<std::mutex> mlock(mutex_);
+    queue_.push_back(std::move(item));
+    mlock.unlock();     // unlock before notificiation to minimize mutex con
+    cond_.notify_one(); // notify one waiting thread
+
+}
+
+template <typename T>
+int SharedQueue<T>::size()
+{
+    std::unique_lock<std::mutex> mlock(mutex_);
+    int size = queue_.size();
+    mlock.unlock();
+    return size;
+}
 
 typedef unsigned int  partyid_t;
 
@@ -149,6 +234,10 @@ public:
     void recv(std::vector<unsigned char> &buf);
 
 private:
+
+    SharedQueue<std::vector<unsigned char>> send_queue;
+
+    void _send(const unsigned char *buf, const size_t length);
 
     void connect_as_server();
     void connect_as_client();
