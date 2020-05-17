@@ -132,23 +132,29 @@ void Network::exchange_all(const vector<vector<u8>> &sbufs, vector<vector<u8>> &
 {
     NCOMM_DEBUG("exchange_all()");
 
-    auto handler = [&](){
-	for (size_t i = 0; i < size(); i++) {
-	    if (i == this->id())
-		continue;
-	    this->send_to((partyid_t)i, sbufs[i]);
-	}
-    };
+    // auto handler = [&](){
+    // 	for (size_t i = 0; i < size(); i++) {
+    // 	    if (i == this->id())
+    // 		continue;
+    // 	    this->send_to((partyid_t)i, sbufs[i]);
+    // 	}
+    // };
 
     // we need to ensure that we "send" to ourselves before read is called.
     send_to(this->id(), sbufs[this->id()]);
 
-    std::thread sender (handler);
+    for (size_t i = 0; i < size(); i++) {
+	if (i == this->id())
+	    continue;
+	this->send_to((partyid_t)i, sbufs[i]);
+    }
+
+    // std::thread sender (handler);
 
     for (size_t i = 0; i < size(); i++)
 	recv_from((partyid_t)i, rbufs[i]);
 
-    sender.join();
+    // sender.join();
 }
 
 void Network::broadcast_send(const vector<u8> &buf) const
